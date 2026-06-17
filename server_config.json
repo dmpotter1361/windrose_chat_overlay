@@ -1,5 +1,0 @@
-{
-    "websocket_port": 8080,
-    "discord_token": "YOUR_BOT_TOKEN_HERE",
-    "channel_id": "YOUR_DISCORD_CHANNEL_ID"
-}

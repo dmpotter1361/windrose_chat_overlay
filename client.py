@@ -23,7 +23,7 @@ overlay = None
 def load_or_prompt_config():
     global PLAYER_NAME, SERVER_URL, GAME_WINDOW_TITLE, MAX_HISTORY, CHAT_TIMEOUT
     
-    # Default settings including the new HUD variables
+    # Default settings generated on the first run
     config_data = {
         "name": "PlayerName", 
         "server_url": "ws://127.0.0.1:8080", 
@@ -32,6 +32,7 @@ def load_or_prompt_config():
         "chat_timeout_seconds": 10
     }
 
+    # If the config file exists, load it and overwrite the defaults
     if os.path.exists(CONFIG_FILE):
         with open(CONFIG_FILE, 'r') as f:
             try:
@@ -40,18 +41,20 @@ def load_or_prompt_config():
             except json.JSONDecodeError:
                 print("Error reading config file. Using defaults.")
 
+    # Assign the variables so the rest of the app can use them
     SERVER_URL = config_data.get("server_url", "ws://127.0.0.1:8080")
     GAME_WINDOW_TITLE = config_data.get("game_window", "Windrose")
     PLAYER_NAME = config_data.get("name", "PlayerName")
     MAX_HISTORY = config_data.get("max_history_rows", 5)
     CHAT_TIMEOUT = config_data.get("chat_timeout_seconds", 10)
 
-    # Force a random name if they left it blank
+    # Force a random name if they left it blank or as the placeholder
     if PLAYER_NAME == "PlayerName" or not PLAYER_NAME.strip():
         random_id = random.randint(1000, 9999)
         PLAYER_NAME = f"Explorer_{random_id}"
         config_data["name"] = PLAYER_NAME
 
+    # Save the master config file
     with open(CONFIG_FILE, 'w') as f:
         json.dump(config_data, f, indent=4)
 
@@ -87,7 +90,7 @@ class ChatOverlay:
         self.root.configure(bg='black')
         self.root.attributes('-alpha', 0.8) # Semi-transparent dark mode
         
-        # Position the HUD in the bottom left corner of the screen
+        # Position the HUD in the bottom left corner
         screen_height = self.root.winfo_screenheight()
         self.root.geometry(f"500x300+20+{screen_height - 380}")
 
@@ -97,7 +100,7 @@ class ChatOverlay:
                                       justify='left', anchor='sw', font=('Arial', 11))
         self.history_label.pack(fill='both', expand=True, padx=10, pady=5)
 
-        # Chat Input Box (Hidden by default)
+        # Chat Input Box
         self.input_var = tk.StringVar()
         self.input_entry = tk.Entry(self.root, textvariable=self.input_var, bg='gray20', fg='white', 
                                     font=('Arial', 11), insertbackground='white')
@@ -112,16 +115,86 @@ class ChatOverlay:
 
     def add_message(self, msg):
         self.messages.append(msg)
-        # Cull old messages based on the JSON setting
         if len(self.messages) > MAX_HISTORY:
             self.messages.pop(0)
             
         self.history_var.set("\n".join(self.messages))
         self.show_chat()
         
-        # Restart the dismissal timer if we aren't currently typing
         if not self.is_typing:
             self.reset_hide_timer()
 
     def show_chat(self):
-        self.root.deicon
+        self.root.deiconify()
+
+    def hide_chat(self):
+        if not self.is_typing:
+            self.root.withdraw()
+
+    def reset_hide_timer(self):
+        if self.hide_job:
+            self.root.after_cancel(self.hide_job)
+        self.hide_job = self.root.after(CHAT_TIMEOUT * 1000, self.hide_chat)
+
+    def activate_input(self):
+        self.game_hwnd = win32gui.GetForegroundWindow()
+        self.show_chat()
+        if self.hide_job:
+            self.root.after_cancel(self.hide_job)
+            
+        self.input_entry.pack(fill='x', side='bottom', padx=10, pady=10)
+        self.input_entry.focus_force()
+
+    def submit_input(self, event=None):
+        text = self.input_var.get().strip()
+        if text:
+            formatted_message = f"{PLAYER_NAME}: {text}"
+            try:
+                ws_connection.send(formatted_message)
+                self.add_message(formatted_message)
+            except Exception:
+                # Socket may exist but be disconnected; fail gracefully.
+                self.add_message("[System]: Not connected — message not sent.")
+
+        self.close_input()
+
+    def cancel_input(self, event=None):
+        self.close_input()
+
+    def close_input(self):
+        self.input_var.set("")
+        self.input_entry.pack_forget()
+        self.is_typing = False
+        
+        if self.game_hwnd:
+            try:
+                win32gui.SetForegroundWindow(self.game_hwnd)
+            except Exception:
+                pass
+        
+        self.reset_hide_timer()
+        
+    def check_window_loop(self):
+        try:
+            hwnd = win32gui.GetForegroundWindow()
+            active_title = win32gui.GetWindowText(hwnd)
+        except Exception:
+            active_title = ""
+            
+        if GAME_WINDOW_TITLE in active_title and not self.is_typing:
+            if keyboard.is_pressed('enter'):
+                self.is_typing = True
+                self.root.after(150, self.activate_input)
+                
+        self.root.after(50, self.check_window_loop)
+
+    def run(self):
+        self.root.bind('<Return>', self.submit_input)
+        self.root.bind('<Escape>', self.cancel_input)
+        self.root.mainloop()
+
+if __name__ == "__main__":
+    load_or_prompt_config()
+    threading.Thread(target=start_websocket, daemon=True).start()
+    overlay = ChatOverlay()
+    overlay.run()

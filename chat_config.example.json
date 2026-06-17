@@ -1,0 +1,7 @@
+{
+    "name": "PlayerName",
+    "server_url": "ws://127.0.0.1:8080",
+    "game_window": "Windrose",
+    "max_history_rows": 5,
+    "chat_timeout_seconds": 10
+}
