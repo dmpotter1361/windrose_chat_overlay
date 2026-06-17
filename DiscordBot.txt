@@ -1,0 +1,64 @@
+Creating a Discord bot from scratch sounds like a massive task, but it is actually just a 60-second process of clicking a few buttons on Discord's website. You don't need to write any code for this part; you just need Discord to hand you a "Token" (a password) so your Node.js server can log in as the bot.
+
+Here is the exact step-by-step process to create your bot, get your token, and invite it to your server.
+
+Step 1: Create the Application
+Go to the Discord Developer Portal and log in with your normal Discord account.
+
+Click the New Application button in the top right corner.
+
+Name it something like Windrose Chat Bridge, agree to the terms, and click Create.
+
+Step 2: Get Your Bot Token and Enable Intents
+This is the most important step. We need the token for your server.js file, and we have to give the bot permission to read messages so it can send Discord chat down to the game.
+
+On the left-hand menu, click Bot.
+
+Under the bot's username, look for a button that says Reset Token (or Generate Token). Click it, copy that long string of text, and save it somewhere temporarily. Never share this token with anyone; it is your bot's master password.
+
+Scroll down on that same Bot page until you see Privileged Gateway Intents.
+
+Toggle Message Content Intent to the ON position. (If you skip this, the bot won't be able to see what people type in Discord).
+
+Click Save Changes at the bottom.
+
+Step 3: Invite the Bot to Your Server
+Now we just need to generate an invite link to bring the bot into your specific Discord server.
+
+On the left-hand menu, click OAuth2, then click URL Generator.
+
+Under Scopes, check the box for bot.
+
+Scroll down to Bot Permissions and check:
+
+Send Messages
+
+Read Message History
+
+View Channels
+
+Scroll to the very bottom, copy the Generated URL, and paste it into a new tab in your web browser.
+
+Select your Discord server from the drop-down menu and authorize it. You will see the bot pop into your server's offline list!
+
+Step 4: Get Your Channel ID
+The final piece of the puzzle is telling the bot exactly which channel it should listen to and type in.
+
+Open your standard Discord app.
+
+Click the Gear icon (User Settings) in the bottom left next to your name.
+
+Scroll down to Advanced and toggle Developer Mode ON.
+
+Go back to your server, right-click the text channel you want to use for the game chat, and click Copy Channel ID.
+
+Step 5: Plug It Into VS Code
+Now you just take those two pieces of information and paste them into the top of your server.js file in VS Code:
+
+JavaScript
+// --- CONFIGURATION ---
+const DISCORD_TOKEN = 'PASTE_YOUR_BOT_TOKEN_HERE';
+const CHANNEL_ID = 'PASTE_YOUR_CHANNEL_ID_HERE';
+That is it! Once you plug those in and run node server.js, you will see your new bot light up online in your Discord server and say it is ready to bridge the chat.
+
+Let me know once you have the token plugged in and if everything fires up correctly in VS Code!
