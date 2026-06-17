@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+node_modules/
+chat_config.json
+server_config.json
+__pycache__/
+*.exe
+.env
